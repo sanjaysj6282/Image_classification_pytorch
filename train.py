@@ -1,3 +1,4 @@
+from msilib.schema import Class
 from dataloader import inaturalist
 from model import Classifier
 import torch.nn as nn
@@ -18,8 +19,8 @@ learning_rate = 0.001
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 ############################################# DEFINE DATALOADER #####################################################
-trainset = inaturalist(root_dir='Data/inaturalist_12K', mode='train')
-valset = inaturalist(root_dir='Data/inaturalist_12K', mode = 'val')
+trainset = inaturalist(root_dir='../nature_12K/inaturalist_12K', mode='train')
+valset = inaturalist(root_dir='../nature_12K/inaturalist_12K', mode = 'val')
 
 trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=4)
 valloader = DataLoader(valset, batch_size=1, shuffle=False, num_workers=4)
@@ -28,9 +29,16 @@ valloader = DataLoader(valset, batch_size=1, shuffle=False, num_workers=4)
 # USEFUL LINK: https://pytorch.org/docs/stable/nn.html#loss-functions
 #---Define the loss function to use, model object and the optimizer for training---#
 
+# different type of images
+no_of_classes=10
+# cross entropy loss is better for classification problems
+loss=nn.CrossEntropyLoss()
+#  to --> if cuda(here present) then use cuda or else cpu
+model=Classifier(no_of_classes).to(device)
+# usual momentum=0.0 to converge faster
+optimizer=optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
 
 ################################### CREATE CHECKPOINT DIRECTORY ####################################################
-
 # NOTE: If you are using Kaggle to train this, remove this section. Kaggle doesn't allow creating new directories.
 checkpoint_dir = 'checkpoints'
 if not os.path.isdir(checkpoint_dir):
@@ -53,6 +61,8 @@ def train(model, dataset, optimizer, criterion, device):
     Feel free to use the accuracy function defined above as an extra metric to track
     '''
     #------YOUR CODE HERE-----#
+    model.train()
+    
 
 def eval(model, dataset, criterion, device):
     '''
@@ -77,6 +87,7 @@ best_valid_loss = float('inf')
 for epoch in range(epochs):
     
     start_time = time.monotonic()
+    print("Epoch "+str(epoch))
     
     '''
     Insert code to train and evaluate the model (Hint: use the functions you previously made :P)
