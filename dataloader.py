@@ -38,9 +38,9 @@ class inaturalist(Dataset):
         self.transform = transforms.Compose([
             # Useful link for this part: https://pytorch.org/vision/stable/transforms.html
             #----------------YOUR CODE HERE---------------------#
-            transforms.Resize([32, 32]),
+            transforms.Resize([256, 256]),
             transforms.PILToTensor(),
-            transforms.ConvertImageDtype(torch.float),
+            # transforms.ConvertImageDtype(torch.float),
             #  add normalize later 
         ])
     

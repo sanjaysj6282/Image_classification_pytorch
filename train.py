@@ -9,6 +9,9 @@ import torch
 from torch.utils.data import DataLoader
 from torchsummary import summary
 
+#  to import a pretrained model for testing
+import torchvision.models
+
 # Sections to Fill: Define Loss function, optimizer and model, Train and Eval functions and the training loop
 
 ############################################# DEFINE HYPERPARAMS #####################################################
@@ -34,7 +37,8 @@ no_of_classes=10
 # cross entropy loss is better for classification problems
 loss=nn.CrossEntropyLoss()
 #  to --> if cuda(here present) then use cuda or else cpu
-model=Classifier(no_of_classes).to(device)
+# model=Classifier(no_of_classes).to(device)
+model=torchvision.models.resnet18()
 # usual momentum=0.0 to converge faster
 optimizer=optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
 
@@ -46,8 +50,8 @@ if not os.path.isdir(checkpoint_dir):
 
 #################################### HELPER FUNCTIONS ##############################################################
 
-def get_model_summary(model, input_tensor_shape):
-    summary(model, input_tensor_shape)
+# def get_model_summary(model, input_tensor_shape):
+#     summary(model, input_tensor_shape)
 
 def accuracy(y_pred, y):
     _, predicted = torch.max(y_pred.data, 1)
@@ -61,7 +65,26 @@ def train(model, dataset, optimizer, criterion, device):
     Feel free to use the accuracy function defined above as an extra metric to track
     '''
     #------YOUR CODE HERE-----#
-    model.train()
+    for img_data in dataset:
+        img, label=img_data
+        img=img.to(device)
+        label=label.to(device)
+        
+        #  IMP
+        # set gradients to zero
+        optimizer.zero_grad()
+        
+        # current output after training
+        curr_output=model(img)
+        
+        print("Current accuracy :" +str(accuracy(curr_output, label)))
+        
+        # modify loss
+        curr_loss=criterion(curr_output, label)
+        # back propogation
+        curr_loss.backward()
+        
+          
     
 
 def eval(model, dataset, criterion, device):
@@ -70,6 +93,20 @@ def eval(model, dataset, criterion, device):
     Feel free to use the accuracy function defined above as an extra metric to track
     '''
     #------YOUR CODE HERE-----#
+    for img_data in dataset:
+        img, label=img_data
+        img=img.to(device)
+        label=label.to(device)
+               
+        # set gradients to zero
+        optimizer.zero_grad()
+        
+        # current output after evaluating
+        curr_output=model(img)
+        print("Label:"+str(curr_output))
+        
+        print("Current accuracy :" +str(accuracy(curr_output, label)))
+        
 
 def epoch_time(start_time, end_time):
     elapsed_time = end_time - start_time
@@ -79,26 +116,33 @@ def epoch_time(start_time, end_time):
 
 ################################################### TRAINING #######################################################
 # Get model Summary
-get_model_summary(model, [3, 256, 256])
+# get_model_summary(model, [3, 256, 256])
 
 #Training and Validation
 best_valid_loss = float('inf')
+model.train()
 
-for epoch in range(epochs):
+def main():
+    for epoch in range(epochs):
+        
+        start_time = time.monotonic()
+        print("Epoch "+str(epoch))
+        
+        '''
+        Insert code to train and evaluate the model (Hint: use the functions you previously made :P)
+        Also save the weights of the model in the checkpoint directory
+        '''
+        #------YOUR CODE HERE-----#
+        train(model, trainloader, optimizer, loss, device)
+        eval(model, valloader, loss, device)
+
+        end_time = time.monotonic()
+        epoch_mins, epoch_secs = epoch_time(start_time, end_time)
+
+        print("\n\n\n TIME TAKEN FOR THE EPOCH: {} mins and {} seconds".format(epoch_mins, epoch_secs))
+
+
+    print("OVERALL TRAINING COMPLETE")
     
-    start_time = time.monotonic()
-    print("Epoch "+str(epoch))
-    
-    '''
-    Insert code to train and evaluate the model (Hint: use the functions you previously made :P)
-    Also save the weights of the model in the checkpoint directory
-    '''
-    #------YOUR CODE HERE-----#
-
-    end_time = time.monotonic()
-    epoch_mins, epoch_secs = epoch_time(start_time, end_time)
-
-    print("\n\n\n TIME TAKEN FOR THE EPOCH: {} mins and {} seconds".format(epoch_mins, epoch_secs))
-
-
-print("OVERALL TRAINING COMPLETE")
+if __name__ == '__main__':
+    main()
