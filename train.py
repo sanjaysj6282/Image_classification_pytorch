@@ -16,10 +16,11 @@ import torchvision.models
 
 ############################################# DEFINE HYPERPARAMS #####################################################
 # Feel free to change these hyperparams based on your machine's capactiy
-batch_size = 32
+batch_size = 16
 epochs = 10
 learning_rate = 0.001
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = 'cpu'
 
 ############################################# DEFINE DATALOADER #####################################################
 trainset = inaturalist(root_dir='../nature_12K/inaturalist_12K', mode='train')
@@ -38,8 +39,8 @@ no_of_classes=10
 loss=nn.CrossEntropyLoss()
 #  to --> if cuda(here present) then use cuda or else cpu
 # model=Classifier(no_of_classes).to(device)
-model=torchvision.models.resnet18()
-# usual momentum=0.0 to converge faster
+model=torchvision.models.resnet18().to(device)
+# usual momentum=0.9 to converge faster
 optimizer=optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
 
 ################################### CREATE CHECKPOINT DIRECTORY ####################################################
@@ -77,7 +78,7 @@ def train(model, dataset, optimizer, criterion, device):
         # current output after training
         curr_output=model(img)
         
-        print("Current accuracy :" +str(accuracy(curr_output, label)))
+        # print("Current accuracy :" +str(accuracy(curr_output, label)))
         
         # modify loss
         curr_loss=criterion(curr_output, label)
@@ -103,7 +104,7 @@ def eval(model, dataset, criterion, device):
         
         # current output after evaluating
         curr_output=model(img)
-        print("Label:"+str(curr_output))
+        # print("Label:"+str(curr_output))
         
         print("Current accuracy :" +str(accuracy(curr_output, label)))
         
@@ -120,13 +121,12 @@ def epoch_time(start_time, end_time):
 
 #Training and Validation
 best_valid_loss = float('inf')
-model.train()
 
 def main():
     for epoch in range(epochs):
-        
         start_time = time.monotonic()
-        print("Epoch "+str(epoch))
+        model.train()
+        print("Epoch "+str(epoch+1))
         
         '''
         Insert code to train and evaluate the model (Hint: use the functions you previously made :P)

@@ -38,8 +38,10 @@ class inaturalist(Dataset):
         self.transform = transforms.Compose([
             # Useful link for this part: https://pytorch.org/vision/stable/transforms.html
             #----------------YOUR CODE HERE---------------------#
-            transforms.Resize([256, 256]),
-            transforms.PILToTensor(),
+            transforms.Resize([150, 150]),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(), # 0-255->0->1 numpy to tensor
+            transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]) # [0, 1]->[-1, -1]  (x-mean)/std dev
             # transforms.ConvertImageDtype(torch.float),
             #  add normalize later 
         ])
