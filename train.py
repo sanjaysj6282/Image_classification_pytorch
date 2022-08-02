@@ -59,8 +59,9 @@ if not os.path.isdir(checkpoint_dir):
 
 #################################### HELPER FUNCTIONS ##############################################################
 
-# def get_model_summary(model, input_tensor_shape):
-#     summary(model, input_tensor_shape)
+def get_model_summary(model, input_tensor_shape):
+    summary(model, input_tensor_shape)
+    print("\n\n")
 
 def train(model, dataset, optimizer, criterion, device):
     '''
@@ -97,10 +98,9 @@ def train(model, dataset, optimizer, criterion, device):
         curr_loss.backward()
         
     ans=100.00*correct/total
-    print("Current accuracy Traning :" +str(ans))
+    print("Accuracy in Traning :" +str(ans))
       
     
-
 def eval(model, dataset, criterion, device):
     '''
     Write the function to validate the model after each epoch
@@ -128,10 +128,7 @@ def eval(model, dataset, criterion, device):
             correct+=(predicted == label).sum().item()
         
     ans=100.00*correct/total
-    print("Current accuracy in Evaluation:" +str(ans))     
-    
-    # returning accuracy  --> checkpoint   
-    return 
+    print("Accuracy in Evaluation:" +str(ans))     
 
 def epoch_time(start_time, end_time):
     elapsed_time = end_time - start_time
@@ -140,13 +137,23 @@ def epoch_time(start_time, end_time):
     return elapsed_mins, elapsed_secs
 
 ################################################### TRAINING #######################################################
-# Get model Summary
-# get_model_summary(model, [3, 256, 256])
 
 #Training and Validation
 best_valid_loss = float('inf')
 
 def main():
+    # Get model Summary
+    get_model_summary(model, (3, 256, 256))
+    
+    if path:
+        checkpoint = torch.load(path)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        curr_epoch = checkpoint['epoch']
+        loss = checkpoint['loss']
+        print("Epoch saved upto "+str(curr_epoch))
+        print("Checkpoint is loaded\n")
+    
     for epoch in range(epochs):
         start_time = time.monotonic()
 
@@ -155,21 +162,22 @@ def main():
         Also save the weights of the model in the checkpoint directory
         '''
         #------YOUR CODE HERE-----#
-        print("Epoch "+str(epoch+1))
+        epoch_now=epoch+curr_epoch+1
+        print("Epoch "+str(epoch_now))
         train(model, trainloader, optimizer, loss, device)
-        Accuracy=eval(model, valloader, loss, device)
+        eval(model, valloader, loss, device)
         torch.save({
-            'epoch': epoch+1,
+            'epoch': epoch_now,
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
-            'Accuracy': Accuracy,
+            'loss': loss,
             }, path)
+        print("Checkpoint saved\n")
 
         end_time = time.monotonic()
         epoch_mins, epoch_secs = epoch_time(start_time, end_time)
 
         print("TIME TAKEN FOR THE EPOCH {}: {} mins and {} seconds\n".format(epoch+1, epoch_mins, epoch_secs))
-
 
     print("OVERALL TRAINING COMPLETE")
     
