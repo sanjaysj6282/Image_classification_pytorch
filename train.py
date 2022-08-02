@@ -37,10 +37,10 @@ valloader = DataLoader(valset, batch_size=1, shuffle=False, num_workers=2)
 # different type of images
 no_of_classes=10
 # cross entropy loss is better for classification problems
-loss=nn.CrossEntropyLoss()
+loss_fn=nn.CrossEntropyLoss()
 #  to --> if cuda(here present) then use cuda or else cpu
 # model=Classifier(no_of_classes).to(device)
-model=torchvision.models.resnet50()
+model=torchvision.models.resnet50(weights=None) # Resnet is trained on imagenet
 no_features=model.fc.in_features
 model.fc=nn.Linear(no_features, no_of_classes)
 model=model.to(device)
@@ -64,10 +64,6 @@ def get_model_summary(model, input_tensor_shape):
     print("\n\n")
 
 def train(model, dataset, optimizer, criterion, device):
-    '''
-    Write the function to train the model for one epoch
-    Feel free to use the accuracy function defined above as an extra metric to track
-    '''
     model.train()
     correct=0
     total=0
@@ -93,19 +89,15 @@ def train(model, dataset, optimizer, criterion, device):
         # print(correct, total)
         
         # modify loss
-        curr_loss=criterion(curr_output, label)
+        loss=criterion(curr_output, label)
         # back propogation
-        curr_loss.backward()
+        loss.backward()
         
     ans=100.00*correct/total
     print("Accuracy in Traning :" +str(ans))
       
     
-def eval(model, dataset, criterion, device):
-    '''
-    Write the function to validate the model after each epoch
-    Feel free to use the accuracy function defined above as an extra metric to track
-    '''
+def eval(model, dataset, device):
     #------YOUR CODE HERE-----#
     model.eval()
     correct=0
@@ -145,32 +137,26 @@ def main():
     # Get model Summary
     get_model_summary(model, (3, 256, 256))
     
-    if path:
+    curr_epoch=0
+    if os.path.exists(path):
         checkpoint = torch.load(path)
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         curr_epoch = checkpoint['epoch']
-        loss = checkpoint['loss']
         print("Epoch saved upto "+str(curr_epoch))
         print("Checkpoint is loaded\n")
     
     for epoch in range(epochs):
         start_time = time.monotonic()
-
-        '''
-        Insert code to train and evaluate the model (Hint: use the functions you previously made :P)
-        Also save the weights of the model in the checkpoint directory
-        '''
         #------YOUR CODE HERE-----#
         epoch_now=epoch+curr_epoch+1
         print("Epoch "+str(epoch_now))
-        train(model, trainloader, optimizer, loss, device)
-        eval(model, valloader, loss, device)
+        train(model, trainloader, optimizer, loss_fn, device)
+        eval(model, valloader, device)
         torch.save({
             'epoch': epoch_now,
             'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'loss': loss,
+            'optimizer_state_dict': optimizer.state_dict()
             }, path)
         print("Checkpoint saved\n")
 

@@ -42,8 +42,6 @@ class inaturalist(Dataset):
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(), # 0-255->0->1 numpy to tensor
             transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]) # [0, 1]->[-1, -1]  (x-mean)/std dev
-            # transforms.ConvertImageDtype(torch.float),
-            #  add normalize later 
         ])
     
     def __getitem__(self, index):
