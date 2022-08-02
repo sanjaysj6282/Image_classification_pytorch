@@ -40,13 +40,16 @@ no_of_classes=10
 loss=nn.CrossEntropyLoss()
 #  to --> if cuda(here present) then use cuda or else cpu
 # model=Classifier(no_of_classes).to(device)
-model=torchvision.models.resnet18()
+model=torchvision.models.resnet50()
 no_features=model.fc.in_features
 model.fc=nn.Linear(no_features, no_of_classes)
 model=model.to(device)
 
 # usual momentum=0.9 to converge faster
 optimizer=optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
+
+# Path for checkpoint
+path='./checkpoints/checkpoints.pt'
 
 ################################### CREATE CHECKPOINT DIRECTORY ####################################################
 # NOTE: If you are using Kaggle to train this, remove this section. Kaggle doesn't allow creating new directories.
@@ -58,12 +61,6 @@ if not os.path.isdir(checkpoint_dir):
 
 # def get_model_summary(model, input_tensor_shape):
 #     summary(model, input_tensor_shape)
-
-def accuracy(y_pred, y):
-    _, predicted = torch.max(y_pred.data, 1)
-    total = y.size(0) # total no of images
-    correct = (predicted == y).sum().item()
-    return [correct, total]
 
 def train(model, dataset, optimizer, criterion, device):
     '''
@@ -111,8 +108,8 @@ def eval(model, dataset, criterion, device):
     '''
     #------YOUR CODE HERE-----#
     model.eval()
-    run_correct=0
-    curr_total=0
+    correct=0
+    total=0
     with torch.no_grad():
         for img_data in dataset:
             img, label=img_data
@@ -126,12 +123,15 @@ def eval(model, dataset, criterion, device):
             curr_output=model(img)
             # print("Label:"+str(curr_output))
             
-            curr_total+=label.size(0)
+            total+=label.size(0)
             _, predicted = torch.max(curr_output.data, 1)
-            run_correct+=(predicted == label).sum().item()
+            correct+=(predicted == label).sum().item()
         
-    ans=100.00*run_correct/curr_total
-    print("Current accuracy in Evaluation:" +str(ans))        
+    ans=100.00*correct/total
+    print("Current accuracy in Evaluation:" +str(ans))     
+    
+    # returning accuracy  --> checkpoint   
+    return 
 
 def epoch_time(start_time, end_time):
     elapsed_time = end_time - start_time
@@ -149,22 +149,26 @@ best_valid_loss = float('inf')
 def main():
     for epoch in range(epochs):
         start_time = time.monotonic()
-        
-        print("Epoch "+str(epoch+1))
-        
+
         '''
         Insert code to train and evaluate the model (Hint: use the functions you previously made :P)
         Also save the weights of the model in the checkpoint directory
         '''
         #------YOUR CODE HERE-----#
+        print("Epoch "+str(epoch+1))
         train(model, trainloader, optimizer, loss, device)
-        
-        eval(model, valloader, loss, device)
+        Accuracy=eval(model, valloader, loss, device)
+        torch.save({
+            'epoch': epoch+1,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'Accuracy': Accuracy,
+            }, path)
 
         end_time = time.monotonic()
         epoch_mins, epoch_secs = epoch_time(start_time, end_time)
 
-        print("\nTIME TAKEN FOR THE EPOCH {}: {} mins and {} seconds".format(epoch+1, epoch_mins, epoch_secs))
+        print("TIME TAKEN FOR THE EPOCH {}: {} mins and {} seconds\n".format(epoch+1, epoch_mins, epoch_secs))
 
 
     print("OVERALL TRAINING COMPLETE")
