@@ -3,3 +3,4 @@ __pycache__
 .idea
 train_test.ipynb
 Outputs.txt
+checkpoints.pt

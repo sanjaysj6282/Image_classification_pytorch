@@ -26,6 +26,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 ############################################# DEFINE DATALOADER #####################################################
 trainset = inaturalist(root_dir='../nature_12K/inaturalist_12K', mode='train')
 valset = inaturalist(root_dir='../nature_12K/inaturalist_12K', mode = 'val')
+# trainset = inaturalist(root_dir='../monkey_dataset', mode='train')
+# valset = inaturalist(root_dir='../monkey_dataset', mode = 'val')
 
 trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=2)
 valloader = DataLoader(valset, batch_size=1, shuffle=False, num_workers=2)
@@ -46,7 +48,7 @@ model.fc=nn.Linear(no_features, no_of_classes)
 model=model.to(device)
 
 # usual momentum=0.9 to converge faster
-optimizer=optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
+optimizer=optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.03)
 
 # Path for checkpoint
 path='./checkpoints/checkpoints.pt'
@@ -67,7 +69,6 @@ def train(model, dataset, optimizer, criterion, device):
     model.train()
     correct=0
     total=0
-    #------YOUR CODE HERE-----#
     for img_data in dataset:
         img, label=img_data
         img=img.to(device)
@@ -79,26 +80,27 @@ def train(model, dataset, optimizer, criterion, device):
         optimizer.zero_grad()
         
         # current output after training
-        curr_output=model(img)
+        output=model(img)
         
         total+=label.size(0)
-        _, predicted = torch.max(curr_output.data, 1)
+        _, predicted = torch.max(output.data, 1)
             
-        # print(predicted, label)
         correct+=(predicted == label).sum().item()
+        # print(predicted, label)
         # print(correct, total)
         
         # modify loss
-        loss=criterion(curr_output, label)
+        loss=criterion(output, label)
         # back propogation
         loss.backward()
+        
+        optimizer.step()
         
     ans=100.00*correct/total
     print("Accuracy in Traning :" +str(ans))
       
     
 def eval(model, dataset, device):
-    #------YOUR CODE HERE-----#
     model.eval()
     correct=0
     total=0
@@ -106,18 +108,20 @@ def eval(model, dataset, device):
         for img_data in dataset:
             img, label=img_data
             img=img.to(device)
+            label=label-1
             label=label.to(device)
                 
             # set gradients to zero
             optimizer.zero_grad()
             
             # current output after evaluating
-            curr_output=model(img)
-            # print("Label:"+str(curr_output))
+            output=model(img)
             
             total+=label.size(0)
-            _, predicted = torch.max(curr_output.data, 1)
+            _, predicted = torch.max(output.data, 1)
             correct+=(predicted == label).sum().item()
+            # print(predicted, label)
+            # print(correct, total)
         
     ans=100.00*correct/total
     print("Accuracy in Evaluation:" +str(ans))     

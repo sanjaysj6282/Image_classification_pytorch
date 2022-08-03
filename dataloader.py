@@ -20,6 +20,7 @@ class inaturalist(Dataset):
         self.files = []
         self.labels = []
         dirs = sorted(os.listdir(os.path.join(self.data_dir, 'train')))
+        # print(dirs)
         if self.mode == 'train': 
             for dir in range(len(dirs)):
                 files = sorted(glob(os.path.join(self.data_dir, 'train', dirs[dir], '*.jpg')))
@@ -37,7 +38,6 @@ class inaturalist(Dataset):
     def _init_transform(self):
         self.transform = transforms.Compose([
             # Useful link for this part: https://pytorch.org/vision/stable/transforms.html
-            #----------------YOUR CODE HERE---------------------#
             transforms.Resize([150, 150]),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(), # 0-255->0->1 numpy to tensor
