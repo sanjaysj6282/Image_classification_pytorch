@@ -18,7 +18,7 @@ import torchvision.models
 ############################################# DEFINE HYPERPARAMS #####################################################
 # Feel free to change these hyperparams based on your machine's capactiy
 batch_size = 32
-epochs = 10
+epochs = 20
 learning_rate = 0.001
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # device = 'cpu'
@@ -48,7 +48,8 @@ model.fc=nn.Linear(no_features, no_of_classes)
 model=model.to(device)
 
 # usual momentum=0.9 to converge faster
-optimizer=optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.03)
+# optimizer=optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9, weight_decay=0.03)
+optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=0.0001)
 
 # Path for checkpoint
 path='./checkpoints/checkpoints.pt'
@@ -93,14 +94,15 @@ def train(model, dataset, optimizer, criterion, device):
         loss=criterion(output, label)
         # back propogation
         loss.backward()
-        
+        # Performs a single optimization step (parameter update)
         optimizer.step()
         
-    ans=100.00*correct/total
-    print("Accuracy in Traning :" +str(ans))
+    accuracy=100.00*correct/total
+    print("Accuracy in Traning :" +str(accuracy))
+    
       
     
-def eval(model, dataset, device):
+def eval(model, dataset, device, best_accuracy, epoch_now):
     model.eval()
     correct=0
     total=0
@@ -123,8 +125,20 @@ def eval(model, dataset, device):
             # print(predicted, label)
             # print(correct, total)
         
-    ans=100.00*correct/total
-    print("Accuracy in Evaluation:" +str(ans))     
+    accuracy=100.00*correct/total
+    print("Accuracy in Evaluation:" +str(accuracy))     
+    
+    if accuracy > best_accuracy:
+        best_accuracy=accuracy
+        torch.save({
+            'epoch': epoch_now,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict()
+        }, path)
+        print("Checkpoint saved")
+    print("Best Accuracy in Evaluation:" +str(accuracy)+"\n")      
+    
+    return best_accuracy
 
 def epoch_time(start_time, end_time):
     elapsed_time = end_time - start_time
@@ -141,33 +155,27 @@ def main():
     # Get model Summary
     get_model_summary(model, (3, 256, 256))
     
-    curr_epoch=0
-    if os.path.exists(path):
-        checkpoint = torch.load(path)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        curr_epoch = checkpoint['epoch']
-        print("Epoch saved upto "+str(curr_epoch))
-        print("Checkpoint is loaded\n")
-    
+    # curr_epoch=0
+    best_accuracy=0
     for epoch in range(epochs):
         start_time = time.monotonic()
+        
         #------YOUR CODE HERE-----#
-        epoch_now=epoch+curr_epoch+1
-        print("Epoch "+str(epoch_now))
+        print("Epoch "+str(epoch+1))
+        if os.path.exists(path):
+            checkpoint = torch.load(path)
+            model.load_state_dict(checkpoint['model_state_dict'])
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            curr_epoch = checkpoint['epoch']
+            # print("Epoch saved upto "+str(curr_epoch))
+            print("Checkpoint is loaded\n")
         train(model, trainloader, optimizer, loss_fn, device)
-        eval(model, valloader, device)
-        torch.save({
-            'epoch': epoch_now,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict()
-            }, path)
-        print("Checkpoint saved\n")
+        best_accuracy=eval(model, valloader, device, best_accuracy, epoch+1)
 
         end_time = time.monotonic()
         epoch_mins, epoch_secs = epoch_time(start_time, end_time)
 
-        print("TIME TAKEN FOR THE EPOCH {}: {} mins and {} seconds\n".format(epoch+1, epoch_mins, epoch_secs))
+        print("TIME TAKEN FOR THE EPOCH {}: {} mins and {} seconds\n\n".format(epoch+1, epoch_mins, epoch_secs))
 
     print("OVERALL TRAINING COMPLETE")
     
