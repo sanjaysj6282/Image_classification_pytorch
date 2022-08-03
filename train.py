@@ -66,7 +66,7 @@ def get_model_summary(model, input_tensor_shape):
     summary(model, input_tensor_shape)
     print("\n\n")
 
-def train(model, dataset, optimizer, criterion, device):
+def train(model, dataset, optimizer, criterion, device, best_accuracy, epoch_now):
     model.train()
     correct=0
     total=0
@@ -100,9 +100,20 @@ def train(model, dataset, optimizer, criterion, device):
     accuracy=100.00*correct/total
     print("Accuracy in Traning :" +str(accuracy))
     
+    if accuracy > best_accuracy:
+        best_accuracy=accuracy
+        torch.save({
+            'epoch': epoch_now,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict()
+        }, path)
+        print("Checkpoint saved")
+    print("Best Accuracy till now:" +str(best_accuracy)+"\n")  
+    
+    return best_accuracy    
       
     
-def eval(model, dataset, device, best_accuracy, epoch_now):
+def eval(model, dataset, device):
     model.eval()
     correct=0
     total=0
@@ -128,17 +139,6 @@ def eval(model, dataset, device, best_accuracy, epoch_now):
     accuracy=100.00*correct/total
     print("Accuracy in Evaluation:" +str(accuracy))     
     
-    if accuracy > best_accuracy:
-        best_accuracy=accuracy
-        torch.save({
-            'epoch': epoch_now,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict()
-        }, path)
-        print("Checkpoint saved")
-    print("Best Accuracy in Evaluation:" +str(accuracy)+"\n")      
-    
-    return best_accuracy
 
 def epoch_time(start_time, end_time):
     elapsed_time = end_time - start_time
@@ -169,8 +169,8 @@ def main():
             curr_epoch = checkpoint['epoch']
             # print("Epoch saved upto "+str(curr_epoch))
             print("Checkpoint is loaded\n")
-        train(model, trainloader, optimizer, loss_fn, device)
-        best_accuracy=eval(model, valloader, device, best_accuracy, epoch+1)
+        best_accuracy=train(model, trainloader, optimizer, loss_fn, device, best_accuracy, epoch+1)
+        eval(model, valloader, device)
 
         end_time = time.monotonic()
         epoch_mins, epoch_secs = epoch_time(start_time, end_time)
